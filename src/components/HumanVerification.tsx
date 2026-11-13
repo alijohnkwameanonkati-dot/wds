@@ -36,7 +36,7 @@ export const HumanVerification: React.FC<HumanVerificationProps> = ({
   const isSolved = answer.trim() !== '' && Number(answer.trim()) === challenge.a + challenge.b;
 
   return (
-    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+    <div className="p-3.5 rounded-xl bg-[#FAF8F3] border border-stone-200 space-y-2">
       {/* Hidden Honeypot Trap for Automated Bots */}
       <div className="hidden" aria-hidden="true">
         <label htmlFor="wds_website_hp">Leave this field blank</label>
@@ -51,16 +51,16 @@ export const HumanVerification: React.FC<HumanVerificationProps> = ({
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+        <span className="text-[11px] font-bold text-[#111622] flex items-center gap-1.5">
           <ShieldCheck
-            className={`w-4 h-4 ${isSolved ? 'text-emerald-600' : 'text-amber-600'}`}
+            className={`w-4 h-4 ${isSolved ? 'text-emerald-700' : 'text-amber-700'}`}
           />
           <span>Human Verification Challenge *</span>
         </span>
         <button
           type="button"
           onClick={regenerate}
-          className="text-[10px] text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
+          className="text-[10px] font-mono uppercase tracking-wider text-stone-500 hover:text-[#111622] flex items-center gap-1 cursor-pointer"
           title="Generate new challenge"
         >
           <RefreshCw className="w-3 h-3" /> New Check
@@ -68,9 +68,9 @@ export const HumanVerification: React.FC<HumanVerificationProps> = ({
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-        <label className="text-xs text-slate-700 font-medium">
-          To prevent spam, what is{' '}
-          <strong className="font-mono text-slate-900">
+        <label className="text-xs text-stone-700 font-medium">
+          To prevent automated spam, what is{' '}
+          <strong className="font-mono tabular-nums text-[#111622]">
             {challenge.a} + {challenge.b}
           </strong>
           ?
@@ -83,14 +83,16 @@ export const HumanVerification: React.FC<HumanVerificationProps> = ({
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder="Answer"
-            className={`w-24 px-3 py-1.5 rounded-xl border text-xs font-mono bg-white focus:outline-none focus:ring-2 ${
+            className={`w-24 px-3 py-1.5 rounded-lg border text-xs font-mono tabular-nums bg-white focus:outline-none focus:ring-2 ${
               isSolved
-                ? 'border-emerald-400 focus:ring-emerald-500 text-emerald-800 font-bold'
-                : 'border-slate-300 focus:ring-amber-500'
+                ? 'border-emerald-500 focus:ring-emerald-600 text-emerald-800 font-bold'
+                : 'border-stone-300 focus:ring-amber-600 text-[#111622]'
             }`}
           />
           {isSolved && (
-            <span className="text-[11px] font-semibold text-emerald-700">Verified</span>
+            <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-emerald-700">
+              Verified
+            </span>
           )}
         </div>
       </div>

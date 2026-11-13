@@ -86,7 +86,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-[#FAF8F3] text-[#111622] flex flex-col selection:bg-amber-600 selection:text-white">
       {/* Vertical Navigation Sidebar on the Left */}
       <Sidebar
         currentTab={currentTab}
@@ -116,7 +116,7 @@ const AppContent: React.FC = () => {
         />
 
         {/* View Switcher Container */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-7">
           {currentTab === 'dashboard' && (
             <DashboardView
               onNavigate={handleNavigate}
@@ -157,38 +157,38 @@ const AppContent: React.FC = () => {
         </main>
 
         {/* Academic Dignified Footer */}
-        <footer className="mt-auto border-t border-slate-200/80 bg-white">
+        <footer className="mt-auto border-t border-stone-200 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-amber-400 font-crest font-bold text-base shadow-xs">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-lg bg-[#111622] border border-amber-500/40 flex items-center justify-center text-amber-400 font-crest font-bold text-base">
                   WDS
                 </div>
                 <div>
-                  <p className="font-crest font-bold text-slate-900 text-sm">
+                  <p className="font-crest font-bold text-[#111622] text-base leading-tight">
                     {settings.societyName}
                   </p>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs text-stone-500 font-medium">
                     {settings.schoolName} ({settings.schoolShortName})
                   </p>
                 </div>
               </div>
 
               <div className="text-center md:text-right">
-                <p className="text-xs text-slate-600 font-serif-literary italic">
+                <p className="text-sm text-stone-700 font-serif-literary italic">
                   "{settings.societyMotto}"
                 </p>
-                <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                  Academic Session {settings.academicYear} • Mamponteng, Ghana
+                <p className="text-[11px] text-stone-400 font-mono mt-1">
+                  Academic Session {settings.academicYear} · Mamponteng, Ghana
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div className="mt-6 pt-5 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-400">
               <p>© {new Date().getFullYear()} {settings.schoolName}. All rights reserved.</p>
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Open Student Contribution &amp; Moderated Governance
+                <span className="flex items-center gap-1.5 text-stone-600 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" /> Open Student Contribution &amp; Moderated Governance
                 </span>
               </div>
             </div>

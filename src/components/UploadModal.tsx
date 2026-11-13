@@ -140,7 +140,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           throw new Error('Please enter a title and an abstract (at least 10 characters).');
         }
         if (!docFile && docTextContent.trim().length < 20) {
-          throw new Error('Please attach a PDF/DOCX/TXT file or paste full document text (at least 20 characters).');
+          throw new Error(
+            'Please attach a PDF/DOCX/TXT file or paste full document text (at least 20 characters).'
+          );
         }
 
         let uploadedFileUrl = '';
@@ -161,7 +163,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         }
 
         const safeFileName =
-          docFile?.name || `${docTitle.trim().replace(/[^a-zA-Z0-9]+/g, '_')}.${docFormat.toLowerCase()}`;
+          docFile?.name ||
+          `${docTitle.trim().replace(/[^a-zA-Z0-9]+/g, '_')}.${docFormat.toLowerCase()}`;
         const computedSize = docFile
           ? formatBytes(docFile.size)
           : formatBytes(new Blob([docTextContent || docDescription]).size);
@@ -209,7 +212,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         }
 
         await wdsService.submitPublicContribution({
-          submissionType: writingCategory as 'poem' | 'short_story' | 'essay' | 'reflection' | 'creative_writing',
+          submissionType: writingCategory as
+            | 'poem'
+            | 'short_story'
+            | 'essay'
+            | 'reflection'
+            | 'creative_writing',
           title: writingTitle.trim(),
           excerpt: writingSubtitle.trim() || undefined,
           content: writingContent.trim(),
@@ -233,8 +241,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           "Submitted for moderation! Your manuscript is in the WDS editorial queue and will appear in the Writers' Corner upon approval."
         );
       } else {
-        if (!articleTitle.trim() || articleExcerpt.trim().length < 10 || articleContent.trim().length < 20) {
-          throw new Error('Headline, summary excerpt (min 10 chars), and article text (min 20 chars) are required.');
+        if (
+          !articleTitle.trim() ||
+          articleExcerpt.trim().length < 10 ||
+          articleContent.trim().length < 20
+        ) {
+          throw new Error(
+            'Headline, summary excerpt (min 10 chars), and article text (min 20 chars) are required.'
+          );
         }
         if (articleImageUrl.trim() && !isValidHttpUrl(articleImageUrl)) {
           throw new Error('Cover photo URL must start with http:// or https://.');
@@ -277,7 +291,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       setHoneypot('');
       if (onSubmitted) {
         setTimeout(() => {
-          onSubmitted(uploadType === 'news' ? 'news' : uploadType === 'writing' ? 'writters' : 'documents');
+          onSubmitted(
+            uploadType === 'news' ? 'news' : uploadType === 'writing' ? 'writters' : 'documents'
+          );
         }, 1600);
       }
     } catch (err) {
@@ -288,17 +304,19 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111622]/75 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold">
+        <div className="p-5 border-b border-white/10 flex items-center justify-between bg-[#111622] text-white shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-400/30 text-amber-300 flex items-center justify-center font-bold shrink-0">
               <FolderUp className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-crest font-bold text-base">Public Contribution Portal</h3>
-              <p className="text-[11px] text-slate-300 font-serif-literary">
+              <h3 className="font-crest font-bold text-lg leading-tight">
+                Public Contribution Portal
+              </h3>
+              <p className="text-[11px] text-stone-300 font-serif-literary">
                 Contribute without an account • Reviewed by WDS Editors &amp; Moderators before publishing
               </p>
             </div>
@@ -306,14 +324,15 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+            className="p-2 text-stone-400 hover:text-white rounded-lg cursor-pointer"
+            aria-label="Close portal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Mode Selector */}
-        <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-3 gap-4 shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex border-b border-stone-200 bg-[#FAF8F3] px-6 pt-3 gap-6 shrink-0 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => {
@@ -323,8 +342,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             }}
             className={`pb-2.5 text-xs font-bold transition-colors cursor-pointer border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
               uploadType === 'document'
-                ? 'border-amber-600 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-amber-700 text-[#111622]'
+                : 'border-transparent text-stone-500 hover:text-[#111622]'
             }`}
           >
             <FolderUp className="w-3.5 h-3.5" />
@@ -340,8 +359,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             }}
             className={`pb-2.5 text-xs font-bold transition-colors cursor-pointer border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
               uploadType === 'writing'
-                ? 'border-amber-600 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-amber-700 text-[#111622]'
+                : 'border-transparent text-stone-500 hover:text-[#111622]'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -357,8 +376,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             }}
             className={`pb-2.5 text-xs font-bold transition-colors cursor-pointer border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
               uploadType === 'news'
-                ? 'border-amber-600 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-amber-700 text-[#111622]'
+                : 'border-transparent text-stone-500 hover:text-[#111622]'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -368,7 +387,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           {/* Moderation Notice */}
-          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-950 flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-[11px] text-amber-950 flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-700 shrink-0" />
             <span>
               All public submissions enter the private moderation queue first to ensure academic integrity and campus safety.
@@ -376,7 +395,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           </div>
 
           {feedbackError && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-start gap-2">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{feedbackError}</span>
             </div>
@@ -390,15 +409,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           )}
 
           {/* Optional Author Attribution */}
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-800">Contributor Attribution (No Login Needed)</span>
-              <label className="inline-flex items-center gap-1.5 cursor-pointer font-semibold text-slate-600">
+          <div className="p-3.5 rounded-xl bg-[#FAF8F3] border border-stone-200 space-y-2.5 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-[#111622]">
+                Contributor Attribution (No Login Needed)
+              </span>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer font-semibold text-stone-600">
                 <input
                   type="checkbox"
                   checked={isAnonymous}
                   onChange={(e) => setIsAnonymous(e.target.checked)}
-                  className="rounded border-slate-300 text-amber-600"
+                  className="rounded border-stone-300 text-amber-700"
                 />
                 <span>Submit Anonymously</span>
               </label>
@@ -412,12 +433,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   value={authorName}
                   onChange={(e) => setAuthorName(e.target.value)}
                   placeholder="Your Display Name *"
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
+                  className="px-3 py-2 rounded-xl border border-stone-300 text-xs bg-white focus:ring-2 focus:ring-amber-600 focus:outline-none"
                 />
                 <select
                   value={authorClass}
                   onChange={(e) => setAuthorClass(e.target.value)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
+                  className="px-3 py-2 rounded-xl border border-stone-300 text-xs bg-white focus:ring-2 focus:ring-amber-600 focus:outline-none"
                 >
                   {OLAG_CLASSES.map((c) => (
                     <option key={c} value={c}>
@@ -432,7 +453,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           {uploadType === 'document' && (
             <>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-[#111622] mb-1">
                   Document Title *
                 </label>
                 <input
@@ -441,17 +462,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   value={docTitle}
                   onChange={(e) => setDocTitle(e.target.value)}
                   placeholder="Enter document title"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Category *</label>
+                  <label className="block text-xs font-bold text-[#111622] mb-1">Category *</label>
                   <select
                     value={docCategory}
                     onChange={(e) => setDocCategory(e.target.value as DocumentCategory)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs bg-white focus:ring-2 focus:ring-amber-600 focus:outline-none"
                   >
                     <option value="Debate Brief">Debate Brief</option>
                     <option value="Essay Manuscript">Essay Manuscript</option>
@@ -461,11 +482,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">File Format</label>
+                  <label className="block text-xs font-bold text-[#111622] mb-1">File Format</label>
                   <select
                     value={docFormat}
                     onChange={(e) => setDocFormat(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs bg-white focus:ring-2 focus:ring-amber-600 focus:outline-none"
                   >
                     <option value="PDF">PDF (.pdf)</option>
                     <option value="DOCX">Word (.docx)</option>
@@ -475,12 +496,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-[#111622] mb-1">
                   Attach File (PDF, DOCX, TXT up to 5 MB)
                 </label>
-                <label className="block border-2 border-dashed border-slate-200 hover:border-amber-400 p-4 rounded-2xl text-center cursor-pointer transition-colors bg-slate-50/50">
-                  <UploadCloud className="w-6 h-6 text-slate-400 mx-auto mb-1" />
-                  <p className="text-xs font-bold text-slate-700">
+                <label className="block border-2 border-dashed border-stone-300 hover:border-amber-600 p-4 rounded-xl text-center cursor-pointer transition-colors bg-[#FAF8F3]">
+                  <UploadCloud className="w-6 h-6 text-stone-400 mx-auto mb-1" />
+                  <p className="text-xs font-bold text-[#111622]">
                     {docFile
                       ? `${docFile.name} (${formatBytes(docFile.size)})`
                       : 'Click to select PDF, DOCX, DOC, or TXT file'}
@@ -495,7 +516,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-[#111622] mb-1">
                   Abstract / Executive Summary *
                 </label>
                 <textarea
@@ -504,12 +525,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   value={docDescription}
                   onChange={(e) => setDocDescription(e.target.value)}
                   placeholder="Summarize the key ideas or purpose of this document (min 10 chars)..."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-[#111622] mb-1">
                   Full Text Transcript / Notes (Optional if file attached)
                 </label>
                 <textarea
@@ -517,7 +538,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   value={docTextContent}
                   onChange={(e) => setDocTextContent(e.target.value)}
                   placeholder="Paste speech transcript or study notes..."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                 />
               </div>
             </>
@@ -526,24 +547,24 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           {uploadType === 'writing' && (
             <>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Title *</label>
+                <label className="block text-xs font-bold text-[#111622] mb-1">Title *</label>
                 <input
                   type="text"
                   required
                   value={writingTitle}
                   onChange={(e) => setWritingTitle(e.target.value)}
                   placeholder="Enter literary title"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-serif-literary focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs font-serif-literary focus:ring-2 focus:ring-amber-600 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Genre</label>
+                  <label className="block text-xs font-bold text-[#111622] mb-1">Genre</label>
                   <select
                     value={writingCategory}
                     onChange={(e) => setWritingCategory(e.target.value as WritingCategory)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-serif-literary"
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs font-serif-literary bg-white focus:ring-2 focus:ring-amber-600 focus:outline-none"
                   >
                     <option value="poem">Original Poem</option>
                     <option value="short_story">Short Story</option>
@@ -553,7 +574,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-[#111622] mb-1">
                     Subtitle / Theme (Optional)
                   </label>
                   <input
@@ -561,17 +582,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     value={writingSubtitle}
                     onChange={(e) => setWritingSubtitle(e.target.value)}
                     placeholder="Short thematic subtitle"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-[#111622] mb-1">
                   Cover Artwork (Optional • Max 3 MB)
                 </label>
                 <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer shrink-0">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-stone-300 bg-[#FAF8F3] hover:bg-stone-100 text-xs font-semibold text-[#111622] cursor-pointer shrink-0">
                     <ImageIcon className="w-3.5 h-3.5" />
                     <span>{writingImageFile ? writingImageFile.name : 'Upload Image'}</span>
                     <input
@@ -586,13 +607,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     value={writingImageUrl}
                     onChange={(e) => setWritingImageUrl(e.target.value)}
                     placeholder="Or paste https:// image URL"
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-[#111622] mb-1">
                   Poem / Manuscript Text *
                 </label>
                 <textarea
@@ -601,7 +622,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   value={writingContent}
                   onChange={(e) => setWritingContent(e.target.value)}
                   placeholder="Compose your original verses, story, or essay (minimum 20 characters)..."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-serif-literary focus:ring-2 focus:ring-amber-500 leading-relaxed"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs font-serif-literary focus:ring-2 focus:ring-amber-600 focus:outline-none leading-relaxed"
                 />
               </div>
             </>
@@ -610,7 +631,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           {uploadType === 'news' && (
             <>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-[#111622] mb-1">
                   Article Headline *
                 </label>
                 <input
@@ -619,17 +640,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   value={articleTitle}
                   onChange={(e) => setArticleTitle(e.target.value)}
                   placeholder="Enter your news headline"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
+                  <label className="block text-xs font-bold text-[#111622] mb-1">Category</label>
                   <select
                     value={articleCategory}
                     onChange={(e) => setArticleCategory(e.target.value as NewsCategory)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs bg-white focus:ring-2 focus:ring-amber-600 focus:outline-none"
                   >
                     <option value="General student news">General student news</option>
                     <option value="Academic news">Academic news</option>
@@ -639,7 +660,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-[#111622] mb-1">
                     Summary Excerpt *
                   </label>
                   <input
@@ -648,17 +669,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     value={articleExcerpt}
                     onChange={(e) => setArticleExcerpt(e.target.value)}
                     placeholder="Short 1-2 line overview"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-[#111622] mb-1">
                   Cover Photo (Optional • Max 3 MB)
                 </label>
                 <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer shrink-0">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-stone-300 bg-[#FAF8F3] hover:bg-stone-100 text-xs font-semibold text-[#111622] cursor-pointer shrink-0">
                     <ImageIcon className="w-3.5 h-3.5" />
                     <span>{articleImageFile ? articleImageFile.name : 'Upload Photo'}</span>
                     <input
@@ -673,20 +694,20 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     value={articleImageUrl}
                     onChange={(e) => setArticleImageUrl(e.target.value)}
                     placeholder="Or paste https:// image URL"
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Full Article *</label>
+                <label className="block text-xs font-bold text-[#111622] mb-1">Full Article *</label>
                 <textarea
                   required
                   rows={5}
                   value={articleContent}
                   onChange={(e) => setArticleContent(e.target.value)}
                   placeholder="Write the full campus report or dispatch (minimum 20 characters)..."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 leading-relaxed"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none leading-relaxed"
                 />
               </div>
             </>
@@ -702,14 +723,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-medium cursor-pointer"
+              className="px-4 py-2 border border-stone-300 text-stone-700 hover:bg-[#FAF8F3] rounded-xl text-xs font-medium cursor-pointer"
             >
               Close
             </button>
             <button
               type="submit"
               disabled={submitting || !humanVerified}
-              className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-amber-400 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+              className="px-5 py-2 bg-[#111622] hover:bg-[#1a2234] disabled:opacity-50 text-amber-300 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
             >
               {submitting ? 'Submitting to Moderation Queue...' : 'Submit for Moderation'}
             </button>

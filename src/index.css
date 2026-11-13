@@ -1,20 +1,83 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-serif: 'Cormorant Garamond', Georgia, Cambria, 'Times New Roman', serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  html {
+    background-color: #faf8f3;
+    color: #111622;
+    scroll-behavior: smooth;
+  }
+
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-sans);
+    background-color: #faf8f3;
+    color: #111622;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-.font-serif-literary {
-  font-family: 'Newsreader', Georgia, Cambria, "Times New Roman", Times, serif;
-}
-
 .font-crest {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-serif);
+  letter-spacing: -0.015em;
 }
 
-/* Custom subtle scrollbars */
+.font-serif-literary {
+  font-family: var(--font-serif);
+  font-weight: 500;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Archival editorial drop-cap for long-form readers */
+.editorial-dropcap::first-letter {
+  font-family: var(--font-serif);
+  float: left;
+  font-size: 3.35rem;
+  line-height: 0.85;
+  font-weight: 700;
+  color: #111622;
+  padding-right: 0.65rem;
+  padding-top: 0.25rem;
+}
+
+/* Editorial horizontal rule divider */
+.editorial-rule {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(180, 83, 9, 0.45), rgba(214, 211, 209, 0.7) 45%, transparent);
+}
+
+/* Subtle horizontal scrollbar hiding */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Refined archival scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -23,9 +86,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d6d0c4;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #a89f91;
 }

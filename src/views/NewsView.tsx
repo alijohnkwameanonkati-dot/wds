@@ -7,6 +7,7 @@ import {
   isValidHttpUrl,
   validateUploadFile,
 } from '../utils/validation';
+import { EDITORIAL_VISUALS } from '../assets/editorialVisuals';
 import { uploadEditorialMedia, uploadSubmissionMedia, wdsService } from '../services/wdsService';
 import { HumanVerification } from '../components/HumanVerification';
 import { NewsArticle, NewsCategory } from '../types';
@@ -51,6 +52,8 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
   const [sortBy, setSortBy] = useState<'newest' | 'most_liked'>('newest');
 
   const [activeArticle, setActiveArticle] = useState<NewsArticle | null>(null);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [confirmDeleteArticleId, setConfirmDeleteArticleId] = useState<string | null>(null);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -111,7 +114,6 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
     }
   }, [isEditor, adminRecord, visitorPrefs]);
 
-  // Keep activeArticle synchronized with live snapshot updates
   useEffect(() => {
     if (activeArticle) {
       const latest = news.find((n) => n.id === activeArticle.id);
@@ -163,7 +165,9 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
     }
 
     if (newTitle.trim().length < 3 || newExcerpt.trim().length < 10 || newContent.trim().length < 20) {
-      setFormError('Please provide headline (min 3 chars), excerpt (min 10 chars), and article text (min 20 chars).');
+      setFormError(
+        'Please provide headline (min 3 chars), excerpt (min 10 chars), and article text (min 20 chars).'
+      );
       return;
     }
 
@@ -235,7 +239,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
           honeypot,
         });
         setFormSuccess(
-          'Article submitted for moderation! Once verified by an Editor or Moderator, it will appear in the OLAG Gazette.'
+          'Article submitted for moderation. Once verified by an Editor or Moderator, it will appear in the OLAG Gazette.'
         );
       }
 
@@ -308,17 +312,17 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
   };
 
   return (
-    <div className="space-y-6 pb-16 animate-in fade-in duration-200">
-      {/* Header */}
+    <div className="space-y-6 pb-16">
+      {/* Masthead */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] font-mono uppercase bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded">
-            {settings.schoolShortName} Senior High School
-          </span>
-          <h1 className="text-2xl font-bold text-slate-900 font-crest mt-1">
+          <p className="text-[11px] font-mono uppercase tracking-[0.16em] text-amber-800 font-semibold">
+            {settings.schoolShortName} Senior High School · Official Press
+          </p>
+          <h1 className="text-3xl font-bold text-[#111622] font-crest mt-0.5 leading-tight">
             The OLAG Gazette &amp; Bulletins
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-serif-literary mt-0.5">
+          <p className="text-sm text-stone-600 font-serif-literary mt-1">
             Official school notices, academic news, inter-house fixtures, and moderated student journalism.
           </p>
         </div>
@@ -329,45 +333,50 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
             setFormSuccess('');
             setIsPublishModalOpen(true);
           }}
-          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer border border-slate-700"
+          className="px-4 py-2.5 bg-[#111622] hover:bg-[#1E273B] text-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>{isEditor ? 'Publish Official Bulletin' : 'Submit Student Article'}</span>
         </button>
       </div>
 
-      {/* Featured Story */}
+      {/* Lead Broadsheet Hero */}
       {!searchQuery && selectedCategory === 'All' && featuredStory && (
-        <div
-          onClick={() => setActiveArticle(featuredStory)}
-          className="relative rounded-3xl overflow-hidden bg-slate-900 text-white shadow-xl cursor-pointer group border border-slate-800"
+        <article
+          onClick={() => {
+            setReadingProgress(0);
+            setConfirmDeleteArticleId(null);
+            setActiveArticle(featuredStory);
+          }}
+          className="relative rounded-2xl overflow-hidden bg-[#111622] text-white shadow-lg cursor-pointer group border border-stone-800"
         >
-          {featuredStory.imageUrl && (
-            <img
-              src={featuredStory.imageUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-45 transition-all duration-700"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-transparent" />
+          <img
+            src={featuredStory.imageUrl || EDITORIAL_VISUALS.editorialDesk}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:opacity-42 transition-opacity duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0E17]/95 via-[#0B0E17]/75 to-[#0B0E17]/35" />
 
           <div className="relative p-6 sm:p-10 space-y-3 max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-amber-300">
               {featuredStory.isOfficial ? (
-                <span className="inline-flex items-center gap-1 bg-amber-500 text-slate-950 text-[10px] font-bold px-2.5 py-0.5 rounded uppercase tracking-wider font-mono">
+                <span className="inline-flex items-center gap-1 font-semibold">
                   <ShieldCheck className="w-3.5 h-3.5" /> Official Gazette
                 </span>
               ) : (
-                <span className="bg-slate-800 text-amber-300 text-[10px] font-bold px-2.5 py-0.5 rounded uppercase font-mono">
-                  Student Dispatch
-                </span>
+                <span className="font-semibold">Student Dispatch</span>
               )}
               {featuredStory.isPinned && (
-                <span className="inline-flex items-center gap-1 bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded font-mono">
-                  <Pin className="w-3 h-3 text-amber-400" /> Pinned
-                </span>
+                <>
+                  <span className="text-stone-500">·</span>
+                  <span className="inline-flex items-center gap-1 text-stone-200">
+                    <Pin className="w-3 h-3 text-amber-400" /> Pinned
+                  </span>
+                </>
               )}
-              <span className="text-xs text-slate-300 font-mono">
+              <span className="text-stone-500">·</span>
+              <span className="text-stone-300 tabular-nums">
                 {new Date(featuredStory.publishedAt).toLocaleDateString([], {
                   month: 'long',
                   day: 'numeric',
@@ -376,54 +385,55 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
               </span>
             </div>
 
-            <h2 className="text-xl sm:text-3xl font-bold font-crest tracking-tight text-white group-hover:text-amber-300 transition-colors">
+            <h2 className="text-2xl sm:text-3xl font-bold font-crest tracking-tight text-white group-hover:text-amber-300 transition-colors leading-tight">
               {featuredStory.title}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-200 line-clamp-2 font-serif-literary">
+            <p className="text-sm text-stone-200 line-clamp-2 font-serif-literary leading-relaxed">
               {featuredStory.excerpt}
             </p>
 
-            <div className="flex items-center gap-4 pt-2 text-xs text-slate-300">
+            <div className="flex items-center gap-4 pt-2 text-xs text-stone-300">
               <div className="flex items-center gap-2">
                 <img
                   src={generateInitialsAvatar(featuredStory.authorDisplayName)}
                   alt=""
-                  className="w-6 h-6 rounded-full object-cover ring-1 ring-white/30"
+                  referrerPolicy="no-referrer"
+                  className="w-6 h-6 rounded-full object-cover ring-1 ring-white/25"
                 />
                 <span className="font-semibold text-white">{featuredStory.authorDisplayName}</span>
               </div>
-              <span>•</span>
-              <span className="flex items-center gap-1 font-mono">
-                <ThumbsUp className="w-3.5 h-3.5 text-amber-400" />{' '}
+              <span className="text-stone-500">·</span>
+              <span className="flex items-center gap-1.5 font-mono tabular-nums">
+                <ThumbsUp className="w-3.5 h-3.5 text-amber-400" />
                 {getLikeCount('news', featuredStory.id, featuredStory.likesCount)}
               </span>
             </div>
           </div>
-        </div>
+        </article>
       )}
 
       {/* Search & Filter */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+      <div className="bg-white rounded-xl border border-stone-200 p-4 space-y-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search bulletins, headlines, or contributors..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full pl-9 pr-4 py-2 rounded-lg border border-stone-200 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none bg-[#FAF8F3]/60"
             />
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-slate-500 flex items-center gap-1 font-mono">
+            <span className="text-[11px] text-stone-500 flex items-center gap-1 font-mono uppercase">
               <Filter className="w-3.5 h-3.5" /> Sort:
             </span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'newest' | 'most_liked')}
-              className="text-xs border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50 text-slate-700 font-medium"
+              className="text-xs border border-stone-200 rounded-lg px-2.5 py-2 bg-[#FAF8F3] text-[#111622] font-medium"
             >
               <option value="newest">Newest Publications</option>
               <option value="most_liked">Most Supported</option>
@@ -436,10 +446,10 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-slate-900 text-amber-400 shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-[#111622] text-amber-300'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
               }`}
             >
               {cat}
@@ -450,18 +460,16 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
 
       {/* Articles Grid */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
-          <p className="text-sm font-bold text-slate-800">
-            {news.length === 0
-              ? 'No Gazette articles published yet'
-              : 'No articles match your filter'}
+        <div className="bg-white rounded-2xl border border-stone-200 p-12 text-center space-y-3">
+          <p className="text-base font-bold font-crest text-[#111622]">
+            {news.length === 0 ? 'No Gazette articles published yet' : 'No articles match your filter'}
           </p>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
+          <p className="text-xs text-stone-500 max-w-md mx-auto">
             Students and club correspondents can submit campus reports to the editorial queue without signing in.
           </p>
           <button
             onClick={() => setIsPublishModalOpen(true)}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
+            className="px-4 py-2 bg-[#111622] hover:bg-[#1E273B] text-amber-300 rounded-lg text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" /> Submit Article
           </button>
@@ -474,76 +482,76 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
             const commentsCount = getApprovedComments('news', item.id).length;
 
             return (
-              <div
+              <article
                 key={item.id}
-                onClick={() => setActiveArticle(item)}
-                className={`rounded-2xl border transition-all duration-200 hover:shadow-md cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                onClick={() => {
+                  setReadingProgress(0);
+                  setConfirmDeleteArticleId(null);
+                  setActiveArticle(item);
+                }}
+                className={`rounded-xl border transition-colors cursor-pointer flex flex-col justify-between overflow-hidden group ${
                   item.isOfficial
-                    ? 'bg-gradient-to-b from-amber-50/20 via-white to-white border-amber-300 shadow-xs'
-                    : 'bg-white border-slate-200 shadow-xs'
+                    ? 'bg-white border-amber-500/40 hover:border-amber-600'
+                    : 'bg-white border-stone-200 hover:border-stone-400'
                 }`}
               >
                 <div>
                   {item.imageUrl && (
-                    <div className="h-44 w-full overflow-hidden relative">
+                    <div className="h-44 w-full overflow-hidden bg-stone-100">
                       <img
                         src={item.imageUrl}
                         alt=""
+                        referrerPolicy="no-referrer"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute top-3 left-3 flex gap-1.5">
-                        {item.isOfficial && (
-                          <span className="bg-amber-500 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded font-mono uppercase">
-                            Official
-                          </span>
-                        )}
-                        {item.isPinned && (
-                          <span className="bg-slate-900/80 text-amber-300 font-bold text-[10px] px-2 py-0.5 rounded font-mono">
-                            Pinned
-                          </span>
-                        )}
-                      </div>
                     </div>
                   )}
 
                   <div className="p-5">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5 font-mono">
-                      <span className="font-semibold text-slate-700 uppercase">{item.category}</span>
-                      <span>{new Date(item.publishedAt).toLocaleDateString()}</span>
+                    <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-[0.12em] text-stone-500 mb-2">
+                      <span className="truncate font-semibold text-amber-800">
+                        {item.category}
+                        {item.isOfficial ? ' · Official' : ''}
+                        {item.isPinned ? ' · Pinned' : ''}
+                      </span>
+                      <span className="shrink-0 tabular-nums ml-2">
+                        {new Date(item.publishedAt).toLocaleDateString()}
+                      </span>
                     </div>
 
-                    <h3 className="font-bold text-slate-900 text-base group-hover:text-amber-800 transition-colors line-clamp-2">
+                    <h3 className="font-crest font-bold text-[#111622] text-xl leading-snug group-hover:text-amber-800 transition-colors line-clamp-2">
                       {item.title}
                     </h3>
-                    <p className="text-xs text-slate-600 line-clamp-3 mt-2 leading-relaxed">
+                    <p className="text-xs text-stone-600 line-clamp-3 mt-2 leading-relaxed">
                       {item.excerpt}
                     </p>
                   </div>
                 </div>
 
-                <div className="px-5 pb-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <div className="px-5 pb-4 pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500">
                   <div className="flex items-center gap-2 truncate pr-2">
                     <img
                       src={generateInitialsAvatar(item.authorDisplayName)}
                       alt=""
+                      referrerPolicy="no-referrer"
                       className="w-5 h-5 rounded-full object-cover shrink-0"
                     />
-                    <span className="font-semibold text-slate-700 truncate">
+                    <span className="font-semibold text-stone-700 truncate">
                       {item.authorDisplayName}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0 font-mono tabular-nums">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         void handleLike(item.id);
                       }}
                       className={`flex items-center gap-1 text-xs cursor-pointer ${
-                        liked ? 'text-amber-600 font-bold' : 'hover:text-slate-800'
+                        liked ? 'text-amber-700 font-bold' : 'hover:text-[#111622]'
                       }`}
                     >
-                      <ThumbsUp className={`w-3.5 h-3.5 ${liked ? 'fill-amber-600' : ''}`} />
+                      <ThumbsUp className={`w-3.5 h-3.5 ${liked ? 'fill-amber-700' : ''}`} />
                       <span>{likeTotal}</span>
                     </button>
                     <span className="flex items-center gap-1 text-xs">
@@ -552,7 +560,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                     </span>
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
@@ -560,68 +568,80 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
 
       {/* ARTICLE READER MODAL */}
       {activeArticle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold font-mono text-slate-800 uppercase tracking-wider">
-                  {activeArticle.category}
-                </span>
-                {activeArticle.isOfficial && (
-                  <span className="bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase">
-                    Official Notice
-                  </span>
-                )}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0D14]/75 backdrop-blur-xs">
+          <div className="w-full max-w-3xl bg-[#FAF8F3] rounded-2xl shadow-2xl border border-stone-300 overflow-hidden max-h-[92vh] flex flex-col">
+            {/* Reading Progress Hairline */}
+            <div className="h-1 w-full bg-stone-200 shrink-0">
+              <div
+                style={{ width: `${readingProgress}%` }}
+                className="h-full bg-amber-700 transition-all duration-100"
+              />
+            </div>
+
+            <div className="px-5 py-3.5 border-b border-stone-200 flex items-center justify-between bg-white shrink-0">
+              <div className="text-[11px] font-mono font-semibold text-stone-600 uppercase tracking-[0.14em] truncate">
+                {activeArticle.category}
+                {activeArticle.isOfficial ? ' · Official Notice' : ''}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleCopyShareLink(activeArticle.id)}
-                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <Share2 className="w-3.5 h-3.5" />
-                  <span>{copiedId === activeArticle.id ? 'Copied Link!' : 'Share'}</span>
+                  <span>{copiedId === activeArticle.id ? 'Copied Link' : 'Share'}</span>
                 </button>
                 <button
                   onClick={() => {
                     setActiveArticle(null);
+                    setConfirmDeleteArticleId(null);
                     setCommentFeedback('');
                     setCommentError('');
                   }}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+                  className="p-1.5 text-stone-400 hover:text-[#111622] rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <div className="overflow-y-auto p-6 sm:p-8 space-y-6 flex-1">
+            <div
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const max = el.scrollHeight - el.clientHeight;
+                setReadingProgress(max > 0 ? Math.min(100, Math.round((el.scrollTop / max) * 100)) : 100);
+              }}
+              className="overflow-y-auto p-6 sm:p-10 space-y-6 flex-1"
+            >
               {activeArticle.imageUrl && (
-                <div className="rounded-2xl overflow-hidden aspect-video w-full max-h-72">
+                <div className="rounded-xl overflow-hidden aspect-video w-full max-h-72 border border-stone-200">
                   <img
                     src={activeArticle.imageUrl}
                     alt=""
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                   />
                 </div>
               )}
 
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-crest">
+                <h1 className="text-3xl sm:text-4xl font-bold text-[#111622] font-crest leading-tight">
                   {activeArticle.title}
                 </h1>
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 mt-3 pb-4 border-b border-slate-100">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500 mt-4 pb-4 border-b border-stone-200">
                   <div className="flex items-center gap-2.5">
                     <img
                       src={generateInitialsAvatar(activeArticle.authorDisplayName)}
                       alt=""
+                      referrerPolicy="no-referrer"
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <div>
-                      <p className="font-semibold text-slate-800">
+                      <p className="font-semibold text-[#111622]">
                         {activeArticle.authorDisplayName}
                         {activeArticle.authorClass ? ` (${activeArticle.authorClass})` : ''}
                       </p>
-                      <p className="text-[10px] text-slate-400 font-mono">
+                      <p className="text-[11px] text-stone-400 font-mono tabular-nums">
                         Published on {new Date(activeArticle.publishedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -637,44 +657,62 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                             adminRecord
                           )
                         }
-                        className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 cursor-pointer ${
+                        className={`px-2.5 py-1.5 rounded-lg border text-xs flex items-center gap-1 cursor-pointer ${
                           activeArticle.isPinned
-                            ? 'bg-amber-50 border-amber-300 text-amber-800'
-                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-amber-50 border-amber-400 text-amber-900 font-semibold'
+                            : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'
                         }`}
                       >
                         <Pin className="w-3.5 h-3.5" />
                         <span>{activeArticle.isPinned ? 'Unpin' : 'Pin'}</span>
                       </button>
-                      <button
-                        onClick={() => {
-                          if (window.confirm('Delete this published article?')) {
-                            void wdsService.deleteNewsArticle(activeArticle.id, adminRecord);
-                            setActiveArticle(null);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 cursor-pointer text-xs"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+
+                      {confirmDeleteArticleId === activeArticle.id ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              void wdsService.deleteNewsArticle(activeArticle.id, adminRecord);
+                              setActiveArticle(null);
+                              setConfirmDeleteArticleId(null);
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold cursor-pointer"
+                          >
+                            Confirm Delete
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteArticleId(null)}
+                            className="px-2 py-1.5 rounded-lg bg-white border border-stone-200 text-stone-600 text-xs cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteArticleId(activeArticle.id)}
+                          className="p-1.5 rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 cursor-pointer text-xs"
+                          title="Delete article"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="prose prose-slate max-w-none text-sm text-slate-700 leading-relaxed whitespace-pre-line font-serif-literary">
+              <div className="editorial-dropcap font-serif-literary text-base sm:text-lg text-stone-800 leading-[1.8] whitespace-pre-line">
                 {activeArticle.content}
               </div>
 
               {/* Support Bar */}
-              <div className="py-4 border-y border-slate-100 flex items-center justify-between">
+              <div className="py-4 border-y border-stone-200 flex items-center justify-between">
                 <button
                   onClick={() => void handleLike(activeArticle.id)}
                   disabled={hasSessionLiked('news', activeArticle.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors tabular-nums ${
                     hasSessionLiked('news', activeArticle.id)
-                      ? 'bg-slate-900 text-amber-300'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'bg-[#111622] text-amber-300'
+                      : 'bg-white border border-stone-200 text-[#111622] hover:bg-stone-100'
                   }`}
                 >
                   <ThumbsUp className="w-4 h-4" />
@@ -683,12 +721,16 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                     {getLikeCount('news', activeArticle.id, activeArticle.likesCount)})
                   </span>
                 </button>
-                <span className="text-[11px] text-slate-500 font-mono">One support vote per session</span>
+                <span className="text-[11px] text-stone-500 font-mono">
+                  One support vote per session
+                </span>
               </div>
 
               {/* Moderated Comments */}
               <div className="space-y-4">
-                <h3 className="font-bold text-slate-900 text-sm">Community Reflections</h3>
+                <h3 className="font-crest font-bold text-[#111622] text-lg">
+                  Community Reflections
+                </h3>
 
                 {commentError && (
                   <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
@@ -703,7 +745,10 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                   </div>
                 )}
 
-                <form onSubmit={handleSubmitComment} className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <form
+                  onSubmit={handleSubmitComment}
+                  className="space-y-3 bg-white p-4 rounded-xl border border-stone-200"
+                >
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
@@ -712,7 +757,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                       onChange={(e) => setCommenterName(e.target.value)}
                       disabled={Boolean(isEditor && adminRecord)}
                       placeholder="Your Name *"
-                      className="sm:w-44 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      className="sm:w-44 px-3 py-2 rounded-lg border border-stone-200 bg-[#FAF8F3] text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                     />
                     <input
                       type="text"
@@ -720,7 +765,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder="Write a constructive reflection (moderated before appearing)..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      className="w-full px-3.5 py-2 rounded-lg border border-stone-200 bg-[#FAF8F3] text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                     />
                   </div>
                   <HumanVerification
@@ -732,7 +777,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                     <button
                       type="submit"
                       disabled={commentSubmitting || !commentHumanVerified}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-amber-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 bg-[#111622] hover:bg-[#1E273B] disabled:opacity-50 text-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>{commentSubmitting ? 'Sending...' : 'Submit Comment for Review'}</span>
@@ -744,21 +789,22 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                   {getApprovedComments('news', activeArticle.id).map((c) => (
                     <div
                       key={c.id}
-                      className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex gap-3 text-xs"
+                      className="p-3.5 rounded-xl bg-white border border-stone-200 flex gap-3 text-xs"
                     >
                       <img
                         src={generateInitialsAvatar(c.displayName)}
                         alt=""
+                        referrerPolicy="no-referrer"
                         className="w-7 h-7 rounded-full object-cover shrink-0"
                       />
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900">{c.displayName}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="font-bold text-[#111622]">{c.displayName}</span>
+                          <span className="text-[10px] text-stone-400 font-mono tabular-nums">
                             {new Date(c.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-slate-600 mt-0.5">{c.content}</p>
+                        <p className="text-stone-600 mt-1 leading-relaxed">{c.content}</p>
                       </div>
                     </div>
                   ))}
@@ -771,16 +817,16 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
 
       {/* PUBLISH / SUBMIT ARTICLE MODAL */}
       {isPublishModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
-              <h3 className="font-crest font-bold text-base">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0D14]/75 backdrop-blur-xs">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-5 border-b border-stone-200 flex items-center justify-between bg-[#111622] text-white shrink-0">
+              <h3 className="font-crest font-bold text-lg">
                 {isEditor ? 'Publish Official School Bulletin' : 'Submit Student Article for Moderation'}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsPublishModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                className="p-1 text-stone-400 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -788,7 +834,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
 
             <form onSubmit={handleSubmitArticle} className="p-6 space-y-4 overflow-y-auto flex-1">
               {!isEditor && (
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-950 flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-amber-700 shrink-0" />
                   <span>
                     No login required. Submitted articles are placed in the WDS Moderation Queue before appearing publicly.
@@ -809,16 +855,16 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                 </div>
               )}
 
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              <div className="p-3 rounded-xl bg-[#FAF8F3] border border-stone-200 space-y-2">
                 {!isEditor && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700">Author Details</span>
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer font-semibold text-slate-600">
+                    <span className="font-semibold text-stone-700">Author Details</span>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer font-medium text-stone-600">
                       <input
                         type="checkbox"
                         checked={isAnonymous}
                         onChange={(e) => setIsAnonymous(e.target.checked)}
-                        className="rounded border-slate-300 text-amber-600"
+                        className="rounded border-stone-300 text-amber-700"
                       />
                       <span>Submit Anonymously</span>
                     </label>
@@ -828,7 +874,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                 {(!isAnonymous || isEditor) && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-semibold text-stone-700 mb-1">
                         Author Display Name *
                       </label>
                       <input
@@ -837,17 +883,17 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                         value={authorNameInput}
                         onChange={(e) => setAuthorNameInput(e.target.value)}
                         placeholder="Enter author display name"
-                        className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
+                        className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs bg-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-semibold text-stone-700 mb-1">
                         OLAG Class / Office
                       </label>
                       <select
                         value={authorClassInput}
                         onChange={(e) => setAuthorClassInput(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
+                        className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs bg-white"
                       >
                         {OLAG_CLASSES.map((c) => (
                           <option key={c} value={c}>
@@ -861,24 +907,26 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Headline *</label>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Headline *</label>
                 <input
                   type="text"
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Enter your headline"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3.5 py-2 rounded-lg border border-stone-300 text-xs focus:ring-2 focus:ring-amber-600 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Category *</label>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    Category *
+                  </label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as NewsCategory)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2 rounded-lg border border-stone-300 text-xs"
                   >
                     {CATEGORIES.filter((c) => c !== 'All').map((c) => (
                       <option key={c} value={c}>
@@ -888,11 +936,11 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">
                     Cover Photo (Optional)
                   </label>
                   <div className="flex items-center gap-2">
-                    <label className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer shrink-0">
+                    <label className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg border border-stone-300 bg-[#FAF8F3] hover:bg-stone-100 text-xs font-semibold text-stone-700 cursor-pointer shrink-0">
                       <ImageIcon className="w-3.5 h-3.5" />
                       <span>{newCoverFile ? newCoverFile.name : 'Upload'}</span>
                       <input
@@ -907,14 +955,14 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                       value={newCoverUrl}
                       onChange={(e) => setNewCoverUrl(e.target.value)}
                       placeholder="Or paste https:// URL"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                      className="w-full px-3 py-2 rounded-lg border border-stone-300 text-xs"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
                   Brief Summary Excerpt *
                 </label>
                 <input
@@ -923,12 +971,12 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                   value={newExcerpt}
                   onChange={(e) => setNewExcerpt(e.target.value)}
                   placeholder="Concise overview (minimum 10 characters)"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                  className="w-full px-3.5 py-2 rounded-lg border border-stone-300 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
                   Article Content *
                 </label>
                 <textarea
@@ -937,7 +985,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   placeholder="Write full text (minimum 20 characters)..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 leading-relaxed font-serif-literary"
+                  className="w-full px-3.5 py-2 rounded-lg border border-stone-300 text-sm focus:ring-2 focus:ring-amber-600 focus:outline-none leading-relaxed font-serif-literary"
                 />
               </div>
 
@@ -950,7 +998,7 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                         type="checkbox"
                         checked={newIsOfficial}
                         onChange={(e) => setNewIsOfficial(e.target.checked)}
-                        className="rounded border-amber-300 text-amber-600"
+                        className="rounded border-amber-300 text-amber-700"
                       />
                       <span>Official School Notice</span>
                     </label>
@@ -959,13 +1007,15 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                         type="checkbox"
                         checked={newIsPinned}
                         onChange={(e) => setNewIsPinned(e.target.checked)}
-                        className="rounded border-amber-300 text-amber-600"
+                        className="rounded border-amber-300 text-amber-700"
                       />
                       <span>Pin to Top</span>
                     </label>
                     <select
                       value={newPriority}
-                      onChange={(e) => setNewPriority(e.target.value as 'normal' | 'important' | 'urgent')}
+                      onChange={(e) =>
+                        setNewPriority(e.target.value as 'normal' | 'important' | 'urgent')
+                      }
                       className="rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs"
                     >
                       <option value="normal">Normal Priority</option>
@@ -974,7 +1024,9 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                     </select>
                     <select
                       value={newStatus}
-                      onChange={(e) => setNewStatus(e.target.value as 'published' | 'draft' | 'scheduled')}
+                      onChange={(e) =>
+                        setNewStatus(e.target.value as 'published' | 'draft' | 'scheduled')
+                      }
                       className="rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs"
                     >
                       <option value="published">Publish Now</option>
@@ -1003,14 +1055,14 @@ export const NewsView: React.FC<NewsViewProps> = ({ initialArticleId }) => {
                 <button
                   type="button"
                   onClick={() => setIsPublishModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-medium cursor-pointer"
+                  className="px-4 py-2 border border-stone-200 text-stone-700 rounded-lg text-xs font-medium cursor-pointer"
                 >
                   Close
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || (!isEditor && !humanVerified)}
-                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-amber-400 font-bold rounded-xl text-xs shadow-xs cursor-pointer"
+                  className="px-5 py-2 bg-[#111622] hover:bg-[#1E273B] disabled:opacity-50 text-amber-300 font-semibold rounded-lg text-xs cursor-pointer"
                 >
                   {submitting
                     ? 'Saving...'
