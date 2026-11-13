@@ -1,0 +1,718 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedSuperAdmin() {
+      return isSignedIn() && request.auth.token.email == 'ghost.hex.12@gmail.com';
+    }
+
+    function adminDocExists() {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function adminRole() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role;
+    }
+
+    function adminActive() {
+      return adminDocExists() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function isSuperAdmin() {
+      return isBootstrappedSuperAdmin() || (isSignedIn() && adminActive() && adminRole() == 'super_admin');
+    }
+
+    function isEditor() {
+      return isSuperAdmin() || (isSignedIn() && adminActive() && (adminRole() == 'editor'));
+    }
+
+    function isModerator() {
+      return isEditor() || (isSignedIn() && adminActive() && (adminRole() == 'moderator'));
+    }
+
+    function isAdmin() {
+      return isModerator();
+    }
+
+    function isOptionalString(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isNonEmptyString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // 3. Entity Validation Blueprints (Synchronized with firebase-blueprint.json)
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'title', 'role', 'status', 'inviteId', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        isNonEmptyString(data.email, 5, 160) &&
+        isNonEmptyString(data.displayName, 2, 100) &&
+        isOptionalString(data, 'title', 120) &&
+        data.role in ['super_admin', 'editor', 'moderator'] &&
+        data.status in ['active', 'disabled'] &&
+        (!('inviteId' in data) || isValidId(data.inviteId)) &&
+        data.createdAt is timestamp &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidAdminInvite(data) {
+      return data.keys().hasAll(['email', 'displayName', 'role', 'status', 'createdByUid', 'createdAt']) &&
+        data.keys().hasOnly(['email', 'displayName', 'title', 'role', 'status', 'createdByUid', 'createdAt']) &&
+        isNonEmptyString(data.email, 5, 160) &&
+        isNonEmptyString(data.displayName, 2, 100) &&
+        isOptionalString(data, 'title', 120) &&
+        data.role in ['super_admin', 'editor', 'moderator'] &&
+        data.status in ['pending', 'claimed', 'revoked'] &&
+        isValidId(data.createdByUid) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidNews(data) {
+      return data.keys().hasAll([
+          'title', 'excerpt', 'content', 'category', 'authorDisplayName',
+          'status', 'isOfficial', 'isPinned', 'priority', 'createdByUid',
+          'likesCount', 'commentsCount', 'createdAt', 'publishedAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'excerpt', 'content', 'category', 'authorDisplayName', 'authorClass',
+          'imageUrl', 'status', 'isOfficial', 'isPinned', 'priority', 'createdByUid',
+          'likesCount', 'commentsCount', 'createdAt', 'publishedAt', 'updatedAt'
+        ]) &&
+        isNonEmptyString(data.title, 3, 180) &&
+        isNonEmptyString(data.excerpt, 10, 400) &&
+        isNonEmptyString(data.content, 20, 20000) &&
+        data.category in ['School announcements', 'Academic news', 'Sports', 'Clubs and societies', 'Events', 'General student news'] &&
+        isNonEmptyString(data.authorDisplayName, 2, 100) &&
+        isOptionalString(data, 'authorClass', 80) &&
+        isOptionalString(data, 'imageUrl', 1000) &&
+        data.status in ['published', 'draft', 'scheduled', 'archived'] &&
+        data.isOfficial is bool &&
+        data.isPinned is bool &&
+        data.priority in ['normal', 'important', 'urgent'] &&
+        isValidId(data.createdByUid) &&
+        data.likesCount is number && data.likesCount >= 0 &&
+        data.commentsCount is number && data.commentsCount >= 0 &&
+        data.createdAt is timestamp &&
+        data.publishedAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDebate(data) {
+      return data.keys().hasAll([
+          'topic', 'description', 'category', 'proLabel', 'conLabel',
+          'openingDate', 'closingDate', 'status', 'proCount', 'conCount',
+          'createdByUid', 'createdByName', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'topic', 'description', 'category', 'proLabel', 'conLabel',
+          'openingDate', 'closingDate', 'status', 'proCount', 'conCount',
+          'createdByUid', 'createdByName', 'createdAt', 'updatedAt'
+        ]) &&
+        isNonEmptyString(data.topic, 5, 220) &&
+        isNonEmptyString(data.description, 10, 3000) &&
+        isNonEmptyString(data.category, 2, 80) &&
+        isNonEmptyString(data.proLabel, 2, 120) &&
+        isNonEmptyString(data.conLabel, 2, 120) &&
+        data.openingDate is timestamp &&
+        data.closingDate is timestamp &&
+        data.status in ['active', 'closed', 'archived'] &&
+        data.proCount is number && data.proCount >= 0 &&
+        data.conCount is number && data.conCount >= 0 &&
+        isValidId(data.createdByUid) &&
+        isNonEmptyString(data.createdByName, 2, 100) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDebateArgument(data) {
+      return data.keys().hasAll([
+          'debateId', 'side', 'displayName', 'title', 'argument',
+          'moderationStatus', 'likesCount', 'reviewedByUid', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'debateId', 'side', 'displayName', 'authorClass', 'title', 'argument',
+          'moderationStatus', 'likesCount', 'reviewedByUid', 'createdAt'
+        ]) &&
+        isValidId(data.debateId) &&
+        data.side in ['FOR', 'AGAINST'] &&
+        isNonEmptyString(data.displayName, 2, 100) &&
+        isOptionalString(data, 'authorClass', 60) &&
+        isNonEmptyString(data.title, 3, 160) &&
+        isNonEmptyString(data.argument, 15, 6000) &&
+        data.moderationStatus in ['approved', 'pending', 'rejected'] &&
+        data.likesCount is number && data.likesCount >= 0 &&
+        isValidId(data.reviewedByUid) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidDebateReply(data) {
+      return data.keys().hasAll([
+          'debateId', 'argumentId', 'displayName', 'content',
+          'moderationStatus', 'reviewedByUid', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'debateId', 'argumentId', 'displayName', 'content',
+          'moderationStatus', 'reviewedByUid', 'createdAt'
+        ]) &&
+        isValidId(data.debateId) &&
+        isValidId(data.argumentId) &&
+        isNonEmptyString(data.displayName, 2, 100) &&
+        isNonEmptyString(data.content, 2, 1500) &&
+        data.moderationStatus in ['approved', 'rejected'] &&
+        isValidId(data.reviewedByUid) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidWriting(data) {
+      return data.keys().hasAll([
+          'title', 'content', 'writingType', 'authorDisplayName',
+          'featured', 'moderationStatus', 'likesCount', 'commentsCount',
+          'reviewedByUid', 'createdAt', 'publishedAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'subtitle', 'dedication', 'content', 'writingType',
+          'authorDisplayName', 'authorClass', 'imageUrl', 'readingTime',
+          'featured', 'moderationStatus', 'likesCount', 'commentsCount',
+          'reviewedByUid', 'createdAt', 'publishedAt', 'updatedAt'
+        ]) &&
+        isNonEmptyString(data.title, 2, 180) &&
+        isOptionalString(data, 'subtitle', 200) &&
+        isOptionalString(data, 'dedication', 200) &&
+        isNonEmptyString(data.content, 20, 30000) &&
+        data.writingType in ['poem', 'short_story', 'essay', 'reflection', 'creative_writing', 'other'] &&
+        isNonEmptyString(data.authorDisplayName, 2, 100) &&
+        isOptionalString(data, 'authorClass', 60) &&
+        isOptionalString(data, 'imageUrl', 1000) &&
+        isOptionalString(data, 'readingTime', 32) &&
+        data.featured is bool &&
+        data.moderationStatus in ['approved', 'pending', 'rejected'] &&
+        data.likesCount is number && data.likesCount >= 0 &&
+        data.commentsCount is number && data.commentsCount >= 0 &&
+        isValidId(data.reviewedByUid) &&
+        data.createdAt is timestamp &&
+        data.publishedAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDocument(data) {
+      return data.keys().hasAll([
+          'title', 'description', 'category', 'fileFormat', 'fileName', 'fileSize',
+          'authorDisplayName', 'moderationStatus', 'downloadsCount', 'likesCount',
+          'reviewedByUid', 'createdAt', 'publishedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'description', 'category', 'fileFormat', 'fileName', 'fileSize',
+          'fileUrl', 'storagePath', 'textContent', 'authorDisplayName', 'authorClass',
+          'moderationStatus', 'downloadsCount', 'likesCount', 'reviewedByUid',
+          'createdAt', 'publishedAt'
+        ]) &&
+        isNonEmptyString(data.title, 3, 180) &&
+        isNonEmptyString(data.description, 10, 2000) &&
+        data.category in ['Debate Brief', 'Essay Manuscript', 'Poetry Collection', 'Speech Transcript', 'Study Paper'] &&
+        isNonEmptyString(data.fileFormat, 1, 16) &&
+        isNonEmptyString(data.fileName, 1, 200) &&
+        isNonEmptyString(data.fileSize, 1, 32) &&
+        isOptionalString(data, 'fileUrl', 1000) &&
+        isOptionalString(data, 'storagePath', 300) &&
+        isOptionalString(data, 'textContent', 25000) &&
+        isNonEmptyString(data.authorDisplayName, 2, 100) &&
+        isOptionalString(data, 'authorClass', 60) &&
+        data.moderationStatus in ['approved', 'pending', 'rejected'] &&
+        data.downloadsCount is number && data.downloadsCount >= 0 &&
+        data.likesCount is number && data.likesCount >= 0 &&
+        isValidId(data.reviewedByUid) &&
+        data.createdAt is timestamp &&
+        data.publishedAt is timestamp;
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll([
+          'targetType', 'targetId', 'displayName', 'content',
+          'moderationStatus', 'reviewedByUid', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'targetType', 'targetId', 'displayName', 'content',
+          'moderationStatus', 'reviewedByUid', 'createdAt'
+        ]) &&
+        data.targetType in ['news', 'writing', 'document'] &&
+        isValidId(data.targetId) &&
+        isNonEmptyString(data.displayName, 2, 100) &&
+        isNonEmptyString(data.content, 2, 1500) &&
+        data.moderationStatus in ['approved', 'rejected'] &&
+        isValidId(data.reviewedByUid) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSubmission(data) {
+      return data.keys().hasAll([
+          'submissionType', 'title', 'content', 'displayName', 'isAnonymous',
+          'status', 'sessionToken', 'botChallengeVerified', 'submittedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'submissionType', 'title', 'excerpt', 'content', 'category',
+          'displayName', 'authorClass', 'isAnonymous', 'imageUrl', 'fileUrl',
+          'storagePath', 'fileName', 'fileSize', 'fileFormat', 'debateId',
+          'argumentId', 'side', 'targetType', 'targetId', 'status',
+          'moderationNotes', 'sessionToken', 'botChallengeVerified',
+          'submittedAt', 'reviewedAt', 'reviewedByUid', 'reviewedByName'
+        ]) &&
+        data.submissionType in ['news', 'poem', 'short_story', 'essay', 'reflection', 'creative_writing', 'debate_argument', 'debate_reply', 'document', 'comment'] &&
+        isNonEmptyString(data.title, 2, 200) &&
+        isOptionalString(data, 'excerpt', 400) &&
+        isNonEmptyString(data.content, 5, 30000) &&
+        isOptionalString(data, 'category', 80) &&
+        isNonEmptyString(data.displayName, 2, 100) &&
+        isOptionalString(data, 'authorClass', 60) &&
+        data.isAnonymous is bool &&
+        isOptionalString(data, 'imageUrl', 1000) &&
+        isOptionalString(data, 'fileUrl', 1000) &&
+        isOptionalString(data, 'storagePath', 300) &&
+        isOptionalString(data, 'fileName', 200) &&
+        isOptionalString(data, 'fileSize', 32) &&
+        isOptionalString(data, 'fileFormat', 16) &&
+        (!('debateId' in data) || data.debateId == '' || isValidId(data.debateId)) &&
+        (!('argumentId' in data) || data.argumentId == '' || isValidId(data.argumentId)) &&
+        (!('side' in data) || data.side in ['FOR', 'AGAINST', '']) &&
+        (!('targetType' in data) || data.targetType in ['news', 'writing', 'document', '']) &&
+        (!('targetId' in data) || data.targetId == '' || isValidId(data.targetId)) &&
+        data.status in ['pending', 'approved', 'rejected', 'changes_requested'] &&
+        isOptionalString(data, 'moderationNotes', 1000) &&
+        isValidId(data.sessionToken) && data.sessionToken.size() >= 6 &&
+        data.botChallengeVerified is bool &&
+        data.submittedAt is timestamp &&
+        (!('reviewedAt' in data) || data.reviewedAt is timestamp) &&
+        isOptionalString(data, 'reviewedByUid', 128) &&
+        isOptionalString(data, 'reviewedByName', 100);
+    }
+
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['title', 'message', 'priority', 'status', 'authorDisplayName', 'createdByUid', 'createdAt', 'publishedAt']) &&
+        data.keys().hasOnly(['title', 'message', 'priority', 'status', 'authorDisplayName', 'createdByUid', 'createdAt', 'publishedAt']) &&
+        isNonEmptyString(data.title, 3, 180) &&
+        isNonEmptyString(data.message, 5, 5000) &&
+        data.priority in ['normal', 'important', 'urgent'] &&
+        data.status in ['published', 'draft'] &&
+        isNonEmptyString(data.authorDisplayName, 2, 100) &&
+        isValidId(data.createdByUid) &&
+        data.createdAt is timestamp &&
+        data.publishedAt is timestamp;
+    }
+
+    function isValidAchievement(data) {
+      return data.keys().hasAll(['title', 'description', 'recipientDisplayName', 'date', 'category', 'status', 'createdByUid', 'createdAt']) &&
+        data.keys().hasOnly(['title', 'description', 'recipientDisplayName', 'recipientClass', 'date', 'month', 'year', 'category', 'status', 'createdByUid', 'createdAt']) &&
+        isNonEmptyString(data.title, 3, 160) &&
+        isNonEmptyString(data.description, 5, 1500) &&
+        isNonEmptyString(data.recipientDisplayName, 2, 100) &&
+        isOptionalString(data, 'recipientClass', 60) &&
+        isNonEmptyString(data.date, 3, 40) &&
+        isOptionalString(data, 'month', 20) &&
+        (!('year' in data) || (data.year is number && data.year >= 2020 && data.year <= 2100)) &&
+        data.category in ['Monthly Laureate', 'Debate Honor', 'Literary Distinction', 'Inter-School Award', 'Service'] &&
+        data.status in ['published', 'draft'] &&
+        isValidId(data.createdByUid) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidEvent(data) {
+      return data.keys().hasAll(['title', 'description', 'date', 'time', 'location', 'category', 'organizer', 'status', 'createdByUid', 'createdAt']) &&
+        data.keys().hasOnly(['title', 'description', 'date', 'time', 'location', 'category', 'organizer', 'status', 'createdByUid', 'createdAt']) &&
+        isNonEmptyString(data.title, 3, 160) &&
+        isNonEmptyString(data.description, 5, 1500) &&
+        isNonEmptyString(data.date, 4, 40) &&
+        isNonEmptyString(data.time, 2, 60) &&
+        isNonEmptyString(data.location, 2, 120) &&
+        data.category in ['Assembly', 'Debate Meet', 'Poetry Night', 'Inter-School', 'Seminar'] &&
+        isNonEmptyString(data.organizer, 2, 120) &&
+        data.status in ['published', 'draft'] &&
+        isValidId(data.createdByUid) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidLike(data) {
+      return data.keys().hasAll(['targetType', 'targetId', 'sessionToken', 'weekKey', 'visibility', 'createdAt']) &&
+        data.keys().hasOnly(['targetType', 'targetId', 'sessionToken', 'weekKey', 'visibility', 'createdAt']) &&
+        data.targetType in ['news', 'writing', 'debateArgument', 'document'] &&
+        isValidId(data.targetId) &&
+        isValidId(data.sessionToken) && data.sessionToken.size() >= 6 &&
+        data.weekKey is string && data.weekKey.size() >= 6 && data.weekKey.size() <= 20 && data.weekKey.matches('^[0-9]{4}-W[0-9]{2}$') &&
+        data.visibility == 'public' &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidWeeklyRanking(data) {
+      return data.keys().hasAll(['weekKey', 'weekLabel', 'entries', 'totalLikes', 'computedByUid', 'computedAt']) &&
+        data.keys().hasOnly(['weekKey', 'weekLabel', 'entries', 'totalLikes', 'computedByUid', 'computedAt']) &&
+        data.weekKey is string && data.weekKey.size() >= 6 && data.weekKey.size() <= 20 && data.weekKey.matches('^[0-9]{4}-W[0-9]{2}$') &&
+        isNonEmptyString(data.weekLabel, 3, 120) &&
+        data.entries is list && data.entries.size() <= 100 &&
+        (data.entries.size() == 0 || data.entries[0] is map) &&
+        data.totalLikes is number && data.totalLikes >= 0 &&
+        isValidId(data.computedByUid) &&
+        data.computedAt is timestamp;
+    }
+
+    function isValidSettings(data) {
+      return data.keys().hasAll([
+          'schoolName', 'schoolShortName', 'societyName', 'societyMotto',
+          'academicYear', 'currentTerm', 'debateCycleDays', 'allowPublicSubmissions', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'schoolName', 'schoolShortName', 'societyName', 'societyMotto',
+          'academicYear', 'currentTerm', 'debateCycleDays', 'contactEmail',
+          'contactLocation', 'meetingSchedule', 'allowPublicSubmissions', 'updatedAt'
+        ]) &&
+        isNonEmptyString(data.schoolName, 3, 160) &&
+        isNonEmptyString(data.schoolShortName, 2, 20) &&
+        isNonEmptyString(data.societyName, 3, 160) &&
+        isNonEmptyString(data.societyMotto, 3, 240) &&
+        isNonEmptyString(data.academicYear, 4, 30) &&
+        isNonEmptyString(data.currentTerm, 3, 80) &&
+        data.debateCycleDays is number && data.debateCycleDays >= 1 && data.debateCycleDays <= 30 &&
+        isOptionalString(data, 'contactEmail', 160) &&
+        isOptionalString(data, 'contactLocation', 200) &&
+        isOptionalString(data, 'meetingSchedule', 200) &&
+        data.allowPublicSubmissions is bool &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['actorUid', 'actorName', 'actorRole', 'action', 'targetType', 'targetId', 'details', 'timestamp']) &&
+        data.keys().hasOnly(['actorUid', 'actorName', 'actorRole', 'action', 'targetType', 'targetId', 'details', 'timestamp']) &&
+        isValidId(data.actorUid) &&
+        isNonEmptyString(data.actorName, 2, 100) &&
+        isNonEmptyString(data.actorRole, 2, 40) &&
+        isNonEmptyString(data.action, 2, 80) &&
+        isNonEmptyString(data.targetType, 2, 60) &&
+        isNonEmptyString(data.targetId, 1, 128) &&
+        isNonEmptyString(data.details, 2, 500) &&
+        data.timestamp is timestamp;
+    }
+
+    // 4. Collection Rules
+
+    // ADMINS (Zero public access; Super Admin manages roles; invited verified admins can claim pending invite)
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (
+        (isSignedIn() && request.auth.uid == adminId) ||
+        isSuperAdmin()
+      );
+      allow list: if isSignedIn() && existing().status in ['active', 'disabled'] && isSuperAdmin();
+      allow create: if isValidId(adminId) && isSignedIn() && isValidAdminRecord(incoming()) &&
+        incoming().uid == adminId &&
+        incoming().createdAt == request.time && (
+          isSuperAdmin() ||
+          (isBootstrappedSuperAdmin() && request.auth.uid == adminId && incoming().role == 'super_admin' && incoming().status == 'active') ||
+          (
+            request.auth.uid == adminId &&
+            ('inviteId' in incoming()) &&
+            exists(/databases/$(database)/documents/adminInvites/$(incoming().inviteId)) &&
+            get(/databases/$(database)/documents/adminInvites/$(incoming().inviteId)).data.email == request.auth.token.email &&
+            get(/databases/$(database)/documents/adminInvites/$(incoming().inviteId)).data.status == 'pending' &&
+            incoming().email == request.auth.token.email &&
+            incoming().role == get(/databases/$(database)/documents/adminInvites/$(incoming().inviteId)).data.role &&
+            incoming().status == 'active'
+          )
+        );
+      allow update: if isValidId(adminId) && isSuperAdmin() && isValidAdminRecord(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'title', 'role', 'status', 'updatedAt']);
+      allow delete: if isValidId(adminId) && isSuperAdmin() && adminId != request.auth.uid;
+    }
+
+    // ADMIN INVITES (Provisioned by Super Admin by email hex key; verified recipient can get & claim once)
+    match /adminInvites/{inviteId} {
+      allow get: if isValidId(inviteId) && (
+        isSuperAdmin() ||
+        (isSignedIn() && (resource == null || existing().email == request.auth.token.email))
+      );
+      allow list: if isSignedIn() && existing().status in ['pending', 'claimed', 'revoked'] && isSuperAdmin();
+      allow create: if isValidId(inviteId) && isSuperAdmin() && isValidAdminInvite(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(inviteId) && isValidAdminInvite(incoming()) &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt && (
+          (isSuperAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['role', 'status', 'title', 'displayName'])) ||
+          (
+            isSignedIn() &&
+            existing().email == request.auth.token.email &&
+            existing().status == 'pending' &&
+            incoming().status == 'claimed' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
+            existsAfter(/databases/$(database)/documents/admins/$(request.auth.uid))
+          )
+        );
+      allow delete: if isValidId(inviteId) && isSuperAdmin();
+    }
+
+    // NEWS
+    match /news/{newsId} {
+      allow get: if isValidId(newsId) && (existing().status == 'published' || isEditor());
+      allow list: if existing().status == 'published' || (isSignedIn() && existing().status in ['published', 'draft', 'scheduled', 'archived'] && isEditor());
+      allow create: if isValidId(newsId) && isValidNews(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time && (
+          isEditor() ||
+          (isModerator() && incoming().isOfficial == false && incoming().isPinned == false && incoming().status == 'published')
+        );
+      allow update: if isValidId(newsId) && isEditor() && isValidNews(incoming()) &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'excerpt', 'content', 'category', 'authorDisplayName',
+          'authorClass', 'imageUrl', 'status', 'isOfficial', 'isPinned',
+          'priority', 'publishedAt', 'updatedAt'
+        ]);
+      allow delete: if isValidId(newsId) && isEditor();
+    }
+
+    // DEBATES
+    match /debates/{debateId} {
+      allow get: if isValidId(debateId) && (existing().status in ['active', 'closed', 'archived'] || isEditor());
+      allow list: if existing().status in ['active', 'closed', 'archived'];
+      allow create: if isValidId(debateId) && isEditor() && isValidDebate(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(debateId) && isModerator() && isValidDebate(incoming()) &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isEditor() ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['proCount', 'conCount', 'updatedAt'])
+        );
+      allow delete: if isValidId(debateId) && isSuperAdmin();
+    }
+
+    // DEBATE ARGUMENTS (Only approved arguments are public; closed debates reject new arguments)
+    match /debateArguments/{argumentId} {
+      allow get: if isValidId(argumentId) && (existing().moderationStatus == 'approved' || isModerator());
+      allow list: if existing().moderationStatus == 'approved' || (isSignedIn() && existing().moderationStatus in ['approved', 'pending', 'rejected'] && isModerator());
+      allow create: if isValidId(argumentId) && isModerator() && isValidDebateArgument(incoming()) &&
+        incoming().reviewedByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/debates/$(incoming().debateId)) &&
+        get(/databases/$(database)/documents/debates/$(incoming().debateId)).data.status == 'active';
+      allow update: if isValidId(argumentId) && isModerator() && isValidDebateArgument(incoming()) &&
+        incoming().debateId == existing().debateId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'argument', 'side', 'moderationStatus', 'reviewedByUid']);
+      allow delete: if isValidId(argumentId) && isModerator();
+    }
+
+    // DEBATE REPLIES
+    match /debateReplies/{replyId} {
+      allow get: if isValidId(replyId) && (existing().moderationStatus == 'approved' || isModerator());
+      allow list: if existing().moderationStatus == 'approved' || (isSignedIn() && existing().moderationStatus in ['approved', 'rejected'] && isModerator());
+      allow create: if isValidId(replyId) && isModerator() && isValidDebateReply(incoming()) &&
+        incoming().reviewedByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/debateArguments/$(incoming().argumentId));
+      allow update: if isValidId(replyId) && isModerator() && isValidDebateReply(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['content', 'moderationStatus', 'reviewedByUid']);
+      allow delete: if isValidId(replyId) && isModerator();
+    }
+
+    // WRITINGS (Writers' Corner)
+    match /writings/{writingId} {
+      allow get: if isValidId(writingId) && (existing().moderationStatus == 'approved' || isModerator());
+      allow list: if existing().moderationStatus == 'approved' || (isSignedIn() && existing().moderationStatus in ['approved', 'pending', 'rejected'] && isModerator());
+      allow create: if isValidId(writingId) && isModerator() && isValidWriting(incoming()) &&
+        incoming().reviewedByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(writingId) && isModerator() && isValidWriting(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'subtitle', 'dedication', 'content', 'writingType',
+          'authorDisplayName', 'authorClass', 'imageUrl', 'readingTime',
+          'featured', 'moderationStatus', 'publishedAt', 'updatedAt', 'reviewedByUid'
+        ]);
+      allow delete: if isValidId(writingId) && isModerator();
+    }
+
+    // REPOSITORY DOCUMENTS
+    match /documents/{docId} {
+      allow get: if isValidId(docId) && (existing().moderationStatus == 'approved' || isModerator());
+      allow list: if existing().moderationStatus == 'approved' || (isSignedIn() && existing().moderationStatus in ['approved', 'pending', 'rejected'] && isModerator());
+      allow create: if isValidId(docId) && isModerator() && isValidDocument(incoming()) &&
+        incoming().reviewedByUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(docId) && isModerator() && isValidDocument(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'description', 'category', 'authorDisplayName', 'authorClass',
+          'moderationStatus', 'reviewedByUid', 'downloadsCount'
+        ]);
+      allow delete: if isValidId(docId) && isModerator();
+    }
+
+    // COMMENTS
+    match /comments/{commentId} {
+      allow get: if isValidId(commentId) && (existing().moderationStatus == 'approved' || isModerator());
+      allow list: if existing().moderationStatus == 'approved' || (isSignedIn() && existing().moderationStatus in ['approved', 'rejected'] && isModerator());
+      allow create: if isValidId(commentId) && isModerator() && isValidComment(incoming()) &&
+        incoming().reviewedByUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(commentId) && isModerator() && isValidComment(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['content', 'moderationStatus', 'reviewedByUid']);
+      allow delete: if isValidId(commentId) && isModerator();
+    }
+
+    // PUBLIC SUBMISSIONS MODERATION QUEUE (Public can ONLY create pending items; NEVER read/list/modify!)
+    match /submissions/{submissionId} {
+      allow get: if isValidId(submissionId) && isModerator();
+      allow list: if isSignedIn() && existing().status in ['pending', 'approved', 'rejected', 'changes_requested'] && isModerator();
+      allow create: if isValidId(submissionId) &&
+        isValidSubmission(incoming()) &&
+        incoming().status == 'pending' &&
+        incoming().botChallengeVerified == true &&
+        incoming().submittedAt == request.time &&
+        !('reviewedAt' in incoming()) &&
+        !('reviewedByUid' in incoming()) &&
+        !('reviewedByName' in incoming()) &&
+        !('moderationNotes' in incoming()) &&
+        (
+          incoming().submissionType != 'debate_argument' ||
+          (
+            ('debateId' in incoming()) &&
+            isValidId(incoming().debateId) &&
+            exists(/databases/$(database)/documents/debates/$(incoming().debateId)) &&
+            get(/databases/$(database)/documents/debates/$(incoming().debateId)).data.status == 'active'
+          )
+        );
+      allow update: if isValidId(submissionId) && isModerator() && isValidSubmission(incoming()) &&
+        incoming().submittedAt == existing().submittedAt &&
+        incoming().sessionToken == existing().sessionToken &&
+        incoming().submissionType == existing().submissionType &&
+        incoming().reviewedByUid == request.auth.uid &&
+        incoming().reviewedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'excerpt', 'content', 'category', 'displayName', 'authorClass',
+          'status', 'moderationNotes', 'reviewedAt', 'reviewedByUid', 'reviewedByName'
+        ]);
+      allow delete: if isValidId(submissionId) && isSuperAdmin();
+    }
+
+    // ANNOUNCEMENTS
+    match /announcements/{announcementId} {
+      allow get: if isValidId(announcementId) && (existing().status == 'published' || isEditor());
+      allow list: if existing().status == 'published' || (isSignedIn() && existing().status in ['published', 'draft'] && isEditor());
+      allow create: if isValidId(announcementId) && isEditor() && isValidAnnouncement(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(announcementId) && isEditor() && isValidAnnouncement(incoming()) &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'message', 'priority', 'status', 'publishedAt']);
+      allow delete: if isValidId(announcementId) && isEditor();
+    }
+
+    // ACHIEVEMENTS & MONTHLY RECOGNITION
+    match /achievements/{achievementId} {
+      allow get: if isValidId(achievementId) && (existing().status == 'published' || isEditor());
+      allow list: if existing().status == 'published' || (isSignedIn() && existing().status in ['published', 'draft'] && isEditor());
+      allow create: if isValidId(achievementId) && isEditor() && isValidAchievement(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(achievementId) && isEditor() && isValidAchievement(incoming()) &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'recipientDisplayName', 'recipientClass', 'date', 'month', 'year', 'category', 'status']);
+      allow delete: if isValidId(achievementId) && isEditor();
+    }
+
+    // EVENTS
+    match /events/{eventId} {
+      allow get: if isValidId(eventId) && (existing().status == 'published' || isEditor());
+      allow list: if existing().status == 'published' || (isSignedIn() && existing().status in ['published', 'draft'] && isEditor());
+      allow create: if isValidId(eventId) && isEditor() && isValidEvent(incoming()) &&
+        incoming().createdByUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(eventId) && isEditor() && isValidEvent(incoming()) &&
+        incoming().createdByUid == existing().createdByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'date', 'time', 'location', 'category', 'organizer', 'status']);
+      allow delete: if isValidId(eventId) && isEditor();
+    }
+
+    // SESSION LIKES (Deterministic ID prevents duplicate likes per browser session)
+    match /likes/{likeId} {
+      allow get: if isValidId(likeId) && existing().visibility == 'public';
+      allow list: if existing().visibility == 'public';
+      allow create: if isValidId(likeId) &&
+        isValidLike(incoming()) &&
+        likeId == (incoming().targetType + '__' + incoming().targetId + '__' + incoming().sessionToken) &&
+        !exists(/databases/$(database)/documents/likes/$(likeId)) &&
+        incoming().createdAt == request.time && (
+          (incoming().targetType == 'news' && exists(/databases/$(database)/documents/news/$(incoming().targetId))) ||
+          (incoming().targetType == 'writing' && exists(/databases/$(database)/documents/writings/$(incoming().targetId))) ||
+          (incoming().targetType == 'debateArgument' && exists(/databases/$(database)/documents/debateArguments/$(incoming().targetId))) ||
+          (incoming().targetType == 'document' && exists(/databases/$(database)/documents/documents/$(incoming().targetId)))
+        );
+      allow update: if false;
+      allow delete: if isValidId(likeId) && isAdmin();
+    }
+
+    // WEEKLY RANKINGS SNAPSHOTS
+    match /weeklyRankings/{weekKey} {
+      allow get: if isValidId(weekKey) && existing().totalLikes >= 0;
+      allow list: if existing().totalLikes >= 0;
+      allow create, update: if isValidId(weekKey) && isEditor() && isValidWeeklyRanking(incoming()) &&
+        incoming().computedByUid == request.auth.uid &&
+        incoming().computedAt == request.time;
+      allow delete: if isValidId(weekKey) && isSuperAdmin();
+    }
+
+    // SETTINGS
+    match /settings/{settingId} {
+      allow get: if isValidId(settingId) && (resource == null || existing().schoolShortName is string);
+      allow list: if existing().schoolShortName is string;
+      allow create, update: if isValidId(settingId) && isSuperAdmin() && isValidSettings(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // AUDIT LOGS (Private to admins)
+    match /auditLogs/{logId} {
+      allow get: if isValidId(logId) && isAdmin();
+      allow list: if isSignedIn() && existing().actorUid is string && isAdmin();
+      allow create: if isValidId(logId) && isAdmin() && isValidAuditLog(incoming()) &&
+        incoming().actorUid == request.auth.uid &&
+        incoming().timestamp == request.time;
+      allow update, delete: if false;
+    }
+  }
+}

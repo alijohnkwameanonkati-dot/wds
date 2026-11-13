@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidPublicImage() {
+      return request.resource != null &&
+        request.resource.size > 0 &&
+        request.resource.size <= 3 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+    }
+
+    function isValidPublicDocument() {
+      return request.resource != null &&
+        request.resource.size > 0 &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        (
+          request.resource.contentType == 'application/pdf' ||
+          request.resource.contentType == 'text/plain' ||
+          request.resource.contentType == 'application/msword' ||
+          request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        );
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Public pending submission uploads (size & MIME validated; cannot overwrite or delete)
+    match /submissions/images/{sessionId}/{fileName} {
+      allow read: if true;
+      allow create: if sessionId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        fileName.size() <= 120 &&
+        isValidPublicImage();
+      allow update, delete: if isSignedIn();
+    }
+
+    match /submissions/documents/{sessionId}/{fileName} {
+      allow read: if true;
+      allow create: if sessionId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        fileName.size() <= 120 &&
+        isValidPublicDocument();
+      allow update, delete: if isSignedIn();
+    }
+
+    // Admin-managed official editorial media
+    match /editorial/{folder}/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn() &&
+        request.resource != null &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        (isValidPublicImage() || isValidPublicDocument());
+    }
+  }
+}

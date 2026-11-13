@@ -1,0 +1,412 @@
+{
+  "entities": {
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Authorised WDS administrator account and role record.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "minLength": 5, "maxLength": 160 },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "role": { "type": "string", "enum": ["super_admin", "editor", "moderator"] },
+        "status": { "type": "string", "enum": ["active", "disabled"] },
+        "inviteId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "role", "status", "createdAt"]
+    },
+    "AdminInvite": {
+      "title": "AdminInvite",
+      "description": "Pre-authorised administrator invitation provisioned by a Super Admin.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "minLength": 5, "maxLength": 160 },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "role": { "type": "string", "enum": ["super_admin", "editor", "moderator"] },
+        "status": { "type": "string", "enum": ["pending", "claimed", "revoked"] },
+        "createdByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "displayName", "role", "status", "createdByUid", "createdAt"]
+    },
+    "NewsArticle": {
+      "title": "NewsArticle",
+      "description": "OLAG Gazette news article or official school bulletin.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "excerpt": { "type": "string", "minLength": 10, "maxLength": 400 },
+        "content": { "type": "string", "minLength": 20, "maxLength": 20000 },
+        "category": {
+          "type": "string",
+          "enum": ["School announcements", "Academic news", "Sports", "Clubs and societies", "Events", "General student news"]
+        },
+        "authorDisplayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "authorClass": { "type": "string", "maxLength": 80 },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "isOfficial": { "type": "boolean" },
+        "isPinned": { "type": "boolean" },
+        "priority": { "type": "string", "enum": ["normal", "important", "urgent"] },
+        "status": { "type": "string", "enum": ["published", "draft", "scheduled", "archived"] },
+        "createdByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "likesCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "excerpt", "content", "category", "authorDisplayName", "status", "isOfficial", "isPinned", "priority", "createdByUid", "likesCount", "commentsCount", "createdAt", "publishedAt", "updatedAt"]
+    },
+    "DebateTopic": {
+      "title": "DebateTopic",
+      "description": "Scheduled debate motion with FOR and AGAINST stances.",
+      "type": "object",
+      "properties": {
+        "topic": { "type": "string", "minLength": 5, "maxLength": 220 },
+        "description": { "type": "string", "minLength": 10, "maxLength": 3000 },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "proLabel": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "conLabel": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "openingDate": { "type": "string", "format": "date-time" },
+        "closingDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "closed", "archived"] },
+        "proCount": { "type": "number" },
+        "conCount": { "type": "number" },
+        "createdByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdByName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["topic", "description", "category", "proLabel", "conLabel", "openingDate", "closingDate", "status", "proCount", "conCount", "createdByUid", "createdByName", "createdAt", "updatedAt"]
+    },
+    "DebateArgument": {
+      "title": "DebateArgument",
+      "description": "Moderated FOR or AGAINST argument published on a debate motion.",
+      "type": "object",
+      "properties": {
+        "debateId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "side": { "type": "string", "enum": ["FOR", "AGAINST"] },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "authorClass": { "type": "string", "maxLength": 60 },
+        "title": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "argument": { "type": "string", "minLength": 15, "maxLength": 6000 },
+        "moderationStatus": { "type": "string", "enum": ["approved", "pending", "rejected"] },
+        "likesCount": { "type": "number" },
+        "reviewedByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["debateId", "side", "displayName", "title", "argument", "moderationStatus", "likesCount", "reviewedByUid", "createdAt"]
+    },
+    "WritingPublication": {
+      "title": "WritingPublication",
+      "description": "Approved creative literary work published in the Writers' Corner.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "subtitle": { "type": "string", "maxLength": 200 },
+        "dedication": { "type": "string", "maxLength": 200 },
+        "content": { "type": "string", "minLength": 20, "maxLength": 30000 },
+        "writingType": {
+          "type": "string",
+          "enum": ["poem", "short_story", "essay", "reflection", "creative_writing", "other"]
+        },
+        "authorDisplayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "authorClass": { "type": "string", "maxLength": 60 },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "readingTime": { "type": "string", "maxLength": 32 },
+        "featured": { "type": "boolean" },
+        "moderationStatus": { "type": "string", "enum": ["approved", "pending", "rejected"] },
+        "likesCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "reviewedByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "writingType", "authorDisplayName", "featured", "moderationStatus", "likesCount", "commentsCount", "reviewedByUid", "createdAt", "publishedAt", "updatedAt"]
+    },
+    "RepositoryDocument": {
+      "title": "RepositoryDocument",
+      "description": "Approved student or faculty document brief stored in Firebase Storage and indexed in Firestore.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "description": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "category": { "type": "string", "enum": ["Debate Brief", "Essay Manuscript", "Poetry Collection", "Speech Transcript", "Study Paper"] },
+        "fileFormat": { "type": "string", "maxLength": 16 },
+        "fileName": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "fileSize": { "type": "string", "maxLength": 32 },
+        "fileUrl": { "type": "string", "maxLength": 1000 },
+        "storagePath": { "type": "string", "maxLength": 300 },
+        "textContent": { "type": "string", "maxLength": 25000 },
+        "authorDisplayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "authorClass": { "type": "string", "maxLength": 60 },
+        "moderationStatus": { "type": "string", "enum": ["approved", "pending", "rejected"] },
+        "downloadsCount": { "type": "number" },
+        "likesCount": { "type": "number" },
+        "reviewedByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "publishedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "category", "fileFormat", "fileName", "fileSize", "authorDisplayName", "moderationStatus", "downloadsCount", "likesCount", "reviewedByUid", "createdAt", "publishedAt"]
+    },
+    "PublicSubmission": {
+      "title": "PublicSubmission",
+      "description": "Pending public contribution awaiting administrator/moderator review.",
+      "type": "object",
+      "properties": {
+        "submissionType": {
+          "type": "string",
+          "enum": ["news", "poem", "short_story", "essay", "reflection", "creative_writing", "debate_argument", "debate_reply", "document", "comment"]
+        },
+        "title": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "excerpt": { "type": "string", "maxLength": 400 },
+        "content": { "type": "string", "minLength": 5, "maxLength": 30000 },
+        "category": { "type": "string", "maxLength": 80 },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "authorClass": { "type": "string", "maxLength": 60 },
+        "isAnonymous": { "type": "boolean" },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "fileUrl": { "type": "string", "maxLength": 1000 },
+        "storagePath": { "type": "string", "maxLength": 300 },
+        "fileName": { "type": "string", "maxLength": 200 },
+        "fileSize": { "type": "string", "maxLength": 32 },
+        "fileFormat": { "type": "string", "maxLength": 16 },
+        "debateId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]*$" },
+        "argumentId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]*$" },
+        "side": { "type": "string", "enum": ["FOR", "AGAINST", ""] },
+        "targetType": { "type": "string", "enum": ["news", "writing", "document", ""] },
+        "targetId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]*$" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "changes_requested"] },
+        "moderationNotes": { "type": "string", "maxLength": 1000 },
+        "sessionToken": { "type": "string", "minLength": 6, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "botChallengeVerified": { "type": "boolean" },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "reviewedByUid": { "type": "string", "maxLength": 128 },
+        "reviewedByName": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["submissionType", "title", "content", "displayName", "isAnonymous", "status", "sessionToken", "botChallengeVerified", "submittedAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Official school and society announcements created by authorised editors or super admins.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 180 },
+        "message": { "type": "string", "minLength": 5, "maxLength": 5000 },
+        "priority": { "type": "string", "enum": ["normal", "important", "urgent"] },
+        "status": { "type": "string", "enum": ["published", "draft"] },
+        "authorDisplayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "createdByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "publishedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "message", "priority", "status", "authorDisplayName", "createdByUid", "createdAt", "publishedAt"]
+    },
+    "Achievement": {
+      "title": "Achievement",
+      "description": "Monthly laureate recognition and society achievements.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 5, "maxLength": 1500 },
+        "recipientDisplayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "recipientClass": { "type": "string", "maxLength": 60 },
+        "date": { "type": "string", "maxLength": 40 },
+        "month": { "type": "string", "maxLength": 20 },
+        "year": { "type": "number" },
+        "category": { "type": "string", "enum": ["Monthly Laureate", "Debate Honor", "Literary Distinction", "Inter-School Award", "Service"] },
+        "status": { "type": "string", "enum": ["published", "draft"] },
+        "createdByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "recipientDisplayName", "date", "category", "status", "createdByUid", "createdAt"]
+    },
+    "SchoolEvent": {
+      "title": "SchoolEvent",
+      "description": "Scheduled OLAG WDS assembly, debate meet, or literary event.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 5, "maxLength": 1500 },
+        "date": { "type": "string", "minLength": 4, "maxLength": 40 },
+        "time": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "location": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "category": { "type": "string", "enum": ["Assembly", "Debate Meet", "Poetry Night", "Inter-School", "Seminar"] },
+        "organizer": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "status": { "type": "string", "enum": ["published", "draft"] },
+        "createdByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "date", "time", "location", "category", "organizer", "status", "createdByUid", "createdAt"]
+    },
+    "CommentRecord": {
+      "title": "CommentRecord",
+      "description": "Approved reader impression on published news, writing, or documents.",
+      "type": "object",
+      "properties": {
+        "targetType": { "type": "string", "enum": ["news", "writing", "document"] },
+        "targetId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "content": { "type": "string", "minLength": 2, "maxLength": 1500 },
+        "moderationStatus": { "type": "string", "enum": ["approved", "rejected"] },
+        "reviewedByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["targetType", "targetId", "displayName", "content", "moderationStatus", "reviewedByUid", "createdAt"]
+    },
+    "DebateReply": {
+      "title": "DebateReply",
+      "description": "Approved counter-reply to an approved debate argument.",
+      "type": "object",
+      "properties": {
+        "debateId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "argumentId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "content": { "type": "string", "minLength": 2, "maxLength": 1500 },
+        "moderationStatus": { "type": "string", "enum": ["approved", "rejected"] },
+        "reviewedByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["debateId", "argumentId", "displayName", "content", "moderationStatus", "reviewedByUid", "createdAt"]
+    },
+    "LikeRecord": {
+      "title": "LikeRecord",
+      "description": "Privacy-preserving session endorsement on published content.",
+      "type": "object",
+      "properties": {
+        "targetType": { "type": "string", "enum": ["news", "writing", "debateArgument", "document"] },
+        "targetId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "sessionToken": { "type": "string", "minLength": 6, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "weekKey": { "type": "string", "minLength": 6, "maxLength": 20, "pattern": "^[0-9]{4}-W[0-9]{2}$" },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["targetType", "targetId", "sessionToken", "weekKey", "visibility", "createdAt"]
+    },
+    "WeeklyRankingSnapshot": {
+      "title": "WeeklyRankingSnapshot",
+      "description": "Historical and active weekly leaderboard snapshot computed from verified published engagement.",
+      "type": "object",
+      "properties": {
+        "weekKey": { "type": "string", "minLength": 6, "maxLength": 20, "pattern": "^[0-9]{4}-W[0-9]{2}$" },
+        "weekLabel": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "entries": { "type": "array" },
+        "totalLikes": { "type": "number" },
+        "computedByUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "computedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["weekKey", "weekLabel", "entries", "totalLikes", "computedByUid", "computedAt"]
+    },
+    "PlatformSettings": {
+      "title": "PlatformSettings",
+      "description": "Editable platform configuration, debate cycle schedules, and OLAG WDS school information.",
+      "type": "object",
+      "properties": {
+        "schoolName": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "schoolShortName": { "type": "string", "minLength": 2, "maxLength": 20 },
+        "societyName": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "societyMotto": { "type": "string", "minLength": 3, "maxLength": 240 },
+        "academicYear": { "type": "string", "minLength": 4, "maxLength": 30 },
+        "currentTerm": { "type": "string", "minLength": 3, "maxLength": 80 },
+        "debateCycleDays": { "type": "number" },
+        "contactEmail": { "type": "string", "maxLength": 160 },
+        "contactLocation": { "type": "string", "maxLength": 200 },
+        "meetingSchedule": { "type": "string", "maxLength": 200 },
+        "allowPublicSubmissions": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schoolName", "schoolShortName", "societyName", "societyMotto", "academicYear", "currentTerm", "debateCycleDays", "allowPublicSubmissions", "updatedAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Administrative and moderation action audit trail.",
+      "type": "object",
+      "properties": {
+        "actorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actorName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "actorRole": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "action": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "targetType": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "targetId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "details": { "type": "string", "minLength": 2, "maxLength": 500 },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["actorUid", "actorName", "actorRole", "action", "targetType", "targetId", "details", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Authorised administrator records keyed by Firebase Auth UID."
+    },
+    "/adminInvites/{inviteId}": {
+      "schema": { "$ref": "#/entities/AdminInvite" },
+      "description": "Email-based admin invitations keyed by lowercase hex-encoded email."
+    },
+    "/news/{newsId}": {
+      "schema": { "$ref": "#/entities/NewsArticle" },
+      "description": "OLAG Gazette news articles and official bulletins."
+    },
+    "/debates/{debateId}": {
+      "schema": { "$ref": "#/entities/DebateTopic" },
+      "description": "Scheduled parliamentary debate motions."
+    },
+    "/debateArguments/{argumentId}": {
+      "schema": { "$ref": "#/entities/DebateArgument" },
+      "description": "Moderated FOR and AGAINST arguments attached to debates."
+    },
+    "/debateReplies/{replyId}": {
+      "schema": { "$ref": "#/entities/DebateReply" },
+      "description": "Moderated counter-replies on debate arguments."
+    },
+    "/writings/{writingId}": {
+      "schema": { "$ref": "#/entities/WritingPublication" },
+      "description": "Moderated poems, short stories, essays, reflections, and creative writing."
+    },
+    "/documents/{docId}": {
+      "schema": { "$ref": "#/entities/RepositoryDocument" },
+      "description": "Moderated academic documents and debate briefs."
+    },
+    "/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/CommentRecord" },
+      "description": "Moderated reader impressions on published items."
+    },
+    "/submissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/PublicSubmission" },
+      "description": "Private moderation queue for all public visitor contributions."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Official campus announcements and priority alerts."
+    },
+    "/achievements/{achievementId}": {
+      "schema": { "$ref": "#/entities/Achievement" },
+      "description": "Monthly recognition and society honors."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/SchoolEvent" },
+      "description": "Campus assemblies, debate meets, and seminars."
+    },
+    "/likes/{likeId}": {
+      "schema": { "$ref": "#/entities/LikeRecord" },
+      "description": "Deterministic session likes preventing duplicate voting."
+    },
+    "/weeklyRankings/{weekKey}": {
+      "schema": { "$ref": "#/entities/WeeklyRankingSnapshot" },
+      "description": "Historical and current weekly ranking snapshots."
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/PlatformSettings" },
+      "description": "Platform charter and schedule configuration."
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Private administrative audit log."
+    }
+  }
+}

@@ -1,0 +1,133 @@
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import {
+  Firestore,
+  initializeFirestore,
+  getFirestore,
+  memoryLocalCache,
+  doc,
+  getDocFromServer,
+} from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import firebaseAppletConfig from '../firebase-applet-config.json';
+
+function pickEnv(envVal: string | undefined, fallback: string): string {
+  if (!envVal || envVal.startsWith('YOUR_')) return fallback;
+  return envVal;
+}
+
+const firebaseConfig = {
+  apiKey: pickEnv(import.meta.env.VITE_FIREBASE_API_KEY, firebaseAppletConfig.apiKey),
+  authDomain: pickEnv(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, firebaseAppletConfig.authDomain),
+  projectId: pickEnv(import.meta.env.VITE_FIREBASE_PROJECT_ID, firebaseAppletConfig.projectId),
+  storageBucket: pickEnv(
+    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    firebaseAppletConfig.storageBucket
+  ),
+  messagingSenderId: pickEnv(
+    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    firebaseAppletConfig.messagingSenderId
+  ),
+  appId: pickEnv(import.meta.env.VITE_FIREBASE_APP_ID, firebaseAppletConfig.appId),
+};
+
+const rawDatabaseId = pickEnv(
+  import.meta.env.VITE_FIREBASE_DATABASE_ID,
+  firebaseAppletConfig.firestoreDatabaseId
+);
+const databaseId = rawDatabaseId && rawDatabaseId !== '(default)' ? rawDatabaseId : undefined;
+
+export const app = initializeApp(firebaseConfig);
+
+function createFirestoreInstance(): Firestore {
+  const firestoreSettings = {
+    experimentalForceLongPolling: true,
+    localCache: memoryLocalCache(),
+  };
+
+  try {
+    return databaseId
+      ? initializeFirestore(app, firestoreSettings, databaseId)
+      : initializeFirestore(app, firestoreSettings);
+  } catch {
+    return databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+  }
+}
+
+export const db: Firestore = createFirestoreInstance();
+export const auth = getAuth(app);
+export const storage = getStorage(app);
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+export const BOOTSTRAPPED_SUPER_ADMIN_EMAIL = (
+  pickEnv(import.meta.env.VITE_INITIAL_SUPER_ADMIN_EMAIL, 'ghost.hex.12@gmail.com')
+).toLowerCase();
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(
+  error: unknown,
+  operationType: OperationType,
+  path: string | null
+): never {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo:
+        auth.currentUser?.providerData?.map((provider) => ({
+          providerId: provider.providerId,
+          email: provider.email,
+        })) || [],
+    },
+    operationType,
+    path,
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+async function testFirestoreConnection(attempt = 1): Promise<void> {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        return testFirestoreConnection(attempt + 1);
+      }
+      console.error('Please check your Firebase configuration: client appears offline.');
+    }
+  }
+}
+
+void testFirestoreConnection();

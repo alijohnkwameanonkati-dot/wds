@@ -1,0 +1,6 @@
+{
+  "name": "CampusSphere",
+  "description": "Complete school information, communication, creativity, debates, and student engagement platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
